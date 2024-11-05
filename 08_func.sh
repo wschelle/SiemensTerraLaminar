@@ -1,43 +1,33 @@
 #! /bin/bash
 
 # run like so:
-# qsub -l 'walltime=12:00:00,mem=120gb' 08_func.sh
+# qsub -l 'walltime=02:00:00,mem=200gb' 08_func.sh
+# sbatch --mem=200G --time=02:00:00 08_func.sh
+
+ulimit -v unlimited
 
 ## Who is this?
-sub='sub-P001b'
-rdir='/home/control/wousch/project/pilot/7T/'
+sub='sub-001'
+
+pdir='/project/3017081.01/'
+homedir=$pdir'required/'
+rdir=$pdir'bids7T/'
 sdir=$rdir$sub'/'
-
-## What did (s)he do?
-declare -a fnr=("task-wmg_run-1")
-
 fdir=$sdir'derivatives/pipe/func/'
-adir=$sdir'derivatives/pipe/anat/'
-ndir=$sdir'derivatives/nii/'
 
-## where are the functional files?
-ffile=()
-nses=${#fnr[@]}
-for (( i=0; i<nses; i++ ));
-do
-ffile[i]=$fdir$sub'_'${fnr[$i]}'_bold_prep.nii.gz'
-done
-
-layfile=$ndir$sub'_lay-equidist.nii.gz'
-parcfile=$ndir$sub'_HCPMMP1.nii.gz'
+suffix0='prep_ls'
+TR=2.98
+cutoff=0.01
 
 module load anaconda3
 source activate py311
-cd /home/control/wousch/
-export PYTHONPATH="$PYTHONPATH:/home/control/wousch/"
+cd $homedir
+export PYTHONPATH="$PYTHONPATH:$homedir"
 
-ffile2=()
-for (( i=0; i<nses; i++ ));
-do
-ffile2[i]=$fdir$sub'_'${fnr[$i]}'_bold_prep_ls.nii.gz'
-if ( [ ! -f ${ffile2[$i]} ] ); then
-python3 -c'from Python.python_scripts.wauwterpreproc import laysmo; laysmo('"'"${ffile[$i]}"'"',"'"$layfile"'",layedge=1,nlay=3,kernelsize=9,fwhm=2.5,parcfile="'"$parcfile"'")'
-fi
-done
+python3 $sdir'derivatives/scripts/highpassfilter.py' $fdir $suffix0 $TR $cutoff
+
+conda deactivate
+
+
 
 
